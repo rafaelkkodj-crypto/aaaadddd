@@ -1,24 +1,21 @@
 --========================================================
--- NEON TRAINING SYSTEM
--- Roblox Studio
--- R6 / R15
--- ESP + SKELETON + ALL CHECK + AIM ASSIST
+-- NEON PLAYER TRAINING
+-- ROBLOX STUDIO - PLAYER R6/R15
+-- UM ÚNICO LOCALSCRIPT
 --========================================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local Camera = workspace.CurrentCamera
-
 --========================================================
--- CONFIGURAÇÃO
+-- CONFIG
 --========================================================
 
-local Settings = {
+local Config = {
 	ESP = false,
 	ESPDistance = 3000,
 
@@ -28,72 +25,84 @@ local Settings = {
 	AllCheck = false,
 	AllCheckDistance = 3000,
 
-	AimAssist = false,
+	Aim = false,
 	AimDistance = 200,
 	AimFOV = 120,
-	AimSmooth = 0.18,
+	AimSmooth = 18,
 
 	Noclip = false,
 }
 
-local PINK = Color3.fromRGB(255, 0, 180)
-local PURPLE = Color3.fromRGB(130, 0, 220)
-local DARK = Color3.fromRGB(15, 8, 20)
-local DARK2 = Color3.fromRGB(30, 12, 38)
-local WHITE = Color3.new(1,1,1)
-local GREEN = Color3.fromRGB(50,255,120)
-local RED = Color3.fromRGB(255,60,70)
-local YELLOW = Color3.fromRGB(255,220,50)
+local Colors = {
+	Pink = Color3.fromRGB(255, 20, 190),
+	Pink2 = Color3.fromRGB(255, 70, 210),
+	Purple = Color3.fromRGB(145, 25, 230),
+
+	Background = Color3.fromRGB(10, 7, 15),
+	Panel = Color3.fromRGB(20, 11, 28),
+	Panel2 = Color3.fromRGB(30, 15, 40),
+
+	White = Color3.fromRGB(255,255,255),
+	Gray = Color3.fromRGB(170,160,180),
+
+	Green = Color3.fromRGB(50,255,125),
+	Red = Color3.fromRGB(255,60,75),
+	Yellow = Color3.fromRGB(255,215,50),
+}
 
 --========================================================
--- FUNÇÕES DE PLAYER
+-- PLAYER FUNCTIONS
 --========================================================
 
-local function CharacterOf(player)
+local function Character(player)
 	return player and player.Character
 end
 
-local function HumanoidOf(player)
-	local c = CharacterOf(player)
-	return c and c:FindFirstChildOfClass("Humanoid")
+local function Humanoid(player)
+	local char = Character(player)
+	return char and char:FindFirstChildOfClass("Humanoid")
 end
 
-local function RootOf(player)
-	local c = CharacterOf(player)
-	if not c then return nil end
+local function Root(player)
+	local char = Character(player)
 
-	return c:FindFirstChild("HumanoidRootPart")
-		or c:FindFirstChild("Torso")
+	if not char then
+		return nil
+	end
+
+	return char:FindFirstChild("HumanoidRootPart")
+		or char:FindFirstChild("Torso")
 end
 
-local function HeadOf(player)
-	local c = CharacterOf(player)
-	return c and c:FindFirstChild("Head")
+local function Head(player)
+	local char = Character(player)
+	return char and char:FindFirstChild("Head")
 end
 
-local function Alive(player)
-	local hum = HumanoidOf(player)
+local function IsAlive(player)
+	local hum = Humanoid(player)
 	return hum and hum.Health > 0
 end
 
-local function DistanceFromMe(player)
-	local a = RootOf(LocalPlayer)
-	local b = RootOf(player)
+local function GetDistance(player)
+	local myRoot = Root(LocalPlayer)
+	local targetRoot = Root(player)
 
-	if not a or not b then
+	if not myRoot or not targetRoot then
 		return math.huge
 	end
 
-	return (a.Position - b.Position).Magnitude
+	return (myRoot.Position - targetRoot.Position).Magnitude
 end
 
 --========================================================
--- GUI PRINCIPAL
+-- GUI
 --========================================================
 
 local Gui = Instance.new("ScreenGui")
-Gui.Name = "NeonTrainingGui"
+Gui.Name = "NeonPlayerTraining"
 Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
 Gui.Parent = PlayerGui
 
 --========================================================
@@ -101,13 +110,13 @@ Gui.Parent = PlayerGui
 --========================================================
 
 local FOV = Instance.new("Frame")
-FOV.Name = "VisibleFOV"
+FOV.Name = "AimFOV"
 FOV.AnchorPoint = Vector2.new(0.5,0.5)
 FOV.Position = UDim2.fromScale(0.5,0.5)
-FOV.Size = UDim2.fromOffset(Settings.AimFOV * 2, Settings.AimFOV * 2)
+FOV.Size = UDim2.fromOffset(240,240)
 FOV.BackgroundTransparency = 1
 FOV.Visible = false
-FOV.ZIndex = 2
+FOV.ZIndex = 3
 FOV.Parent = Gui
 
 local FOVCorner = Instance.new("UICorner")
@@ -115,253 +124,340 @@ FOVCorner.CornerRadius = UDim.new(1,0)
 FOVCorner.Parent = FOV
 
 local FOVStroke = Instance.new("UIStroke")
-FOVStroke.Color = PINK
+FOVStroke.Color = Colors.Pink
 FOVStroke.Thickness = 2
+FOVStroke.Transparency = 0.1
 FOVStroke.Parent = FOV
 
 --========================================================
--- PAINEL
+-- MAIN PANEL
 --========================================================
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(420,570)
-Main.Position = UDim2.new(.5,-210,.5,-285)
-Main.BackgroundColor3 = DARK
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(440,620)
+Main.Position = UDim2.new(0.5,-220,0.5,-310)
+Main.BackgroundColor3 = Colors.Background
 Main.BorderSizePixel = 0
 Main.Parent = Gui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0,15)
+MainCorner.CornerRadius = UDim.new(0,16)
 MainCorner.Parent = Main
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = PINK
+MainStroke.Color = Colors.Pink
 MainStroke.Thickness = 2
+MainStroke.Transparency = 0.15
 MainStroke.Parent = Main
 
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1,0,0,70)
-Header.BackgroundColor3 = DARK2
-Header.BorderSizePixel = 0
-Header.Parent = Main
+--========================================================
+-- TOP BAR
+--========================================================
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0,15)
-HeaderCorner.Parent = Header
+local Top = Instance.new("Frame")
+Top.Size = UDim2.new(1,0,0,78)
+Top.BackgroundColor3 = Colors.Panel
+Top.BorderSizePixel = 0
+Top.Parent = Main
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0,16)
+TopCorner.Parent = Top
+
+local Accent = Instance.new("Frame")
+Accent.Size = UDim2.new(1,0,0,3)
+Accent.BackgroundColor3 = Colors.Pink
+Accent.BorderSizePixel = 0
+Accent.Parent = Top
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1,-20,0,30)
-Title.Position = UDim2.fromOffset(12,8)
+Title.Size = UDim2.new(1,-30,0,30)
+Title.Position = UDim2.fromOffset(15,10)
 Title.BackgroundTransparency = 1
-Title.Text = "NEON TRAINING"
-Title.TextColor3 = PINK
+Title.Text = "NEON PLAYER"
+Title.TextColor3 = Colors.Pink
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 21
+Title.TextSize = 22
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
+Title.Parent = Top
 
-local Sub = Instance.new("TextLabel")
-Sub.Size = UDim2.new(1,-20,0,20)
-Sub.Position = UDim2.fromOffset(12,40)
-Sub.BackgroundTransparency = 1
-Sub.Text = "PLAYER • R6 / R15"
-Sub.TextColor3 = Color3.fromRGB(190,150,200)
-Sub.Font = Enum.Font.Gotham
-Sub.TextSize = 11
-Sub.TextXAlignment = Enum.TextXAlignment.Left
-Sub.Parent = Header
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1,-30,0,22)
+Subtitle.Position = UDim2.fromOffset(15,42)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "PLAYER TRAINING  •  R6 / R15"
+Subtitle.TextColor3 = Colors.Gray
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.TextSize = 11
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+Subtitle.Parent = Top
+
+--========================================================
+-- SCROLL
+--========================================================
 
 local Scroll = Instance.new("ScrollingFrame")
-Scroll.Size = UDim2.new(1,-20,1,-82)
-Scroll.Position = UDim2.fromOffset(10,77)
+Scroll.Name = "Controls"
+Scroll.Size = UDim2.new(1,-20,1,-90)
+Scroll.Position = UDim2.fromOffset(10,85)
 Scroll.BackgroundTransparency = 1
 Scroll.BorderSizePixel = 0
 Scroll.ScrollBarThickness = 4
-Scroll.ScrollBarImageColor3 = PINK
-Scroll.CanvasSize = UDim2.fromOffset(0,900)
+Scroll.ScrollBarImageColor3 = Colors.Pink
+Scroll.CanvasSize = UDim2.fromOffset(0,1000)
 Scroll.Parent = Main
 
 local Layout = Instance.new("UIListLayout")
-Layout.Padding = UDim.new(0,8)
+Layout.Padding = UDim.new(0,9)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
 Layout.Parent = Scroll
 
 --========================================================
--- GUI HELPERS
+-- SECTION
 --========================================================
 
-local function Section(text)
+local function Section(icon,text)
 
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.new(1,-10,0,28)
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = PINK
-	l.Font = Enum.Font.GothamBold
-	l.TextSize = 14
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.Parent = Scroll
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.new(1,-8,0,30)
+	holder.BackgroundTransparency = 1
+	holder.Parent = Scroll
 
-end
-
-local function Toggle(text, initial, callback)
-
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(1,-10,0,42)
-	b.BackgroundColor3 = DARK2
-	b.BorderSizePixel = 0
-	b.Text = ""
-	b.AutoButtonColor = false
-	b.Parent = Scroll
-
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0,8)
-	c.Parent = b
+	local line = Instance.new("Frame")
+	line.Size = UDim2.fromOffset(4,20)
+	line.Position = UDim2.fromOffset(2,5)
+	line.BackgroundColor3 = Colors.Pink
+	line.BorderSizePixel = 0
+	line.Parent = holder
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1,-80,1,0)
-	label.Position = UDim2.fromOffset(12,0)
+	label.Size = UDim2.new(1,-25,1,0)
+	label.Position = UDim2.fromOffset(14,0)
 	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = WHITE
-	label.Font = Enum.Font.GothamMedium
-	label.TextSize = 12
+	label.Text = icon.."  "..text
+	label.TextColor3 = Colors.Pink2
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = b
-
-	local state = Instance.new("TextLabel")
-	state.Size = UDim2.fromOffset(55,25)
-	state.Position = UDim2.new(1,-67,.5,-12)
-	state.BackgroundColor3 = Color3.fromRGB(55,25,60)
-	state.TextColor3 = WHITE
-	state.Font = Enum.Font.GothamBold
-	state.TextSize = 10
-	state.Parent = b
-
-	local sc = Instance.new("UICorner")
-	sc.CornerRadius = UDim.new(0,6)
-	sc.Parent = state
-
-	local value = initial
-
-	local function update()
-
-		state.Text = value and "ON" or "OFF"
-		state.BackgroundColor3 = value and PINK or Color3.fromRGB(55,25,60)
-
-		callback(value)
-
-	end
-
-	b.MouseButton1Click:Connect(function()
-		value = not value
-		update()
-	end)
-
-	update()
+	label.Parent = holder
 
 end
+
+--========================================================
+-- TOGGLE
+--========================================================
+
+local function Toggle(icon,text,default,callback)
+
+	local Button = Instance.new("TextButton")
+	Button.Size = UDim2.new(1,-8,0,46)
+	Button.BackgroundColor3 = Colors.Panel
+	Button.BorderSizePixel = 0
+	Button.Text = ""
+	Button.AutoButtonColor = false
+	Button.Parent = Scroll
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0,9)
+	Corner.Parent = Button
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = Colors.Purple
+	Stroke.Transparency = 0.65
+	Stroke.Parent = Button
+
+	local Icon = Instance.new("TextLabel")
+	Icon.Size = UDim2.fromOffset(35,46)
+	Icon.Position = UDim2.fromOffset(5,0)
+	Icon.BackgroundTransparency = 1
+	Icon.Text = icon
+	Icon.TextSize = 18
+	Icon.Parent = Button
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1,-120,1,0)
+	Label.Position = UDim2.fromOffset(42,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.TextColor3 = Colors.White
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = Button
+
+	local Status = Instance.new("TextLabel")
+	Status.Size = UDim2.fromOffset(58,27)
+	Status.Position = UDim2.new(1,-70,0.5,-13)
+	Status.BackgroundColor3 = Color3.fromRGB(55,30,65)
+	Status.TextColor3 = Colors.Gray
+	Status.Font = Enum.Font.GothamBold
+	Status.TextSize = 10
+	Status.Parent = Button
+
+	local StatusCorner = Instance.new("UICorner")
+	StatusCorner.CornerRadius = UDim.new(0,7)
+	StatusCorner.Parent = Status
+
+	local value = default
+
+	local function Update()
+
+		if value then
+			Status.Text = "ON"
+			Status.BackgroundColor3 = Colors.Pink
+			Status.TextColor3 = Colors.White
+			Stroke.Color = Colors.Pink
+			Stroke.Transparency = 0.25
+		else
+			Status.Text = "OFF"
+			Status.BackgroundColor3 = Color3.fromRGB(55,30,65)
+			Status.TextColor3 = Colors.Gray
+			Stroke.Color = Colors.Purple
+			Stroke.Transparency = 0.65
+		end
+
+		callback(value)
+	end
+
+	Button.MouseButton1Click:Connect(function()
+		value = not value
+		Update()
+	end)
+
+	Update()
+
+	return Button
+end
+
+--========================================================
+-- SLIDER
+--========================================================
 
 local function Slider(text,min,max,default,callback)
 
-	local holder = Instance.new("Frame")
-	holder.Size = UDim2.new(1,-10,0,65)
-	holder.BackgroundColor3 = DARK2
-	holder.BorderSizePixel = 0
-	holder.Parent = Scroll
+	local Holder = Instance.new("Frame")
+	Holder.Size = UDim2.new(1,-8,0,70)
+	Holder.BackgroundColor3 = Colors.Panel
+	Holder.BorderSizePixel = 0
+	Holder.Parent = Scroll
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0,8)
-	corner.Parent = holder
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0,9)
+	Corner.Parent = Holder
 
-	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1,-80,0,24)
-	title.Position = UDim2.fromOffset(12,5)
-	title.BackgroundTransparency = 1
-	title.Text = text
-	title.TextColor3 = WHITE
-	title.Font = Enum.Font.GothamMedium
-	title.TextSize = 12
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Parent = holder
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1,-100,0,25)
+	Label.Position = UDim2.fromOffset(14,5)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.TextColor3 = Colors.White
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = Holder
 
-	local valueLabel = Instance.new("TextLabel")
-	valueLabel.Size = UDim2.fromOffset(65,24)
-	valueLabel.Position = UDim2.new(1,-75,0,5)
-	valueLabel.BackgroundTransparency = 1
-	valueLabel.TextColor3 = PINK
-	valueLabel.Font = Enum.Font.GothamBold
-	valueLabel.TextSize = 12
-	valueLabel.Parent = holder
+	local Value = Instance.new("TextLabel")
+	Value.Size = UDim2.fromOffset(70,25)
+	Value.Position = UDim2.new(1,-84,0,5)
+	Value.BackgroundTransparency = 1
+	Value.TextColor3 = Colors.Pink
+	Value.Font = Enum.Font.GothamBold
+	Value.TextSize = 12
+	Value.Parent = Holder
 
-	local bar = Instance.new("Frame")
-	bar.Size = UDim2.new(1,-25,0,7)
-	bar.Position = UDim2.fromOffset(12,43)
-	bar.BackgroundColor3 = Color3.fromRGB(55,25,60)
-	bar.BorderSizePixel = 0
-	bar.Parent = holder
+	local Bar = Instance.new("Frame")
+	Bar.Size = UDim2.new(1,-28,0,7)
+	Bar.Position = UDim2.fromOffset(14,46)
+	Bar.BackgroundColor3 = Color3.fromRGB(55,28,65)
+	Bar.BorderSizePixel = 0
+	Bar.Parent = Holder
 
-	local bc = Instance.new("UICorner")
-	bc.CornerRadius = UDim.new(1,0)
-	bc.Parent = bar
+	local BarCorner = Instance.new("UICorner")
+	BarCorner.CornerRadius = UDim.new(1,0)
+	BarCorner.Parent = Bar
 
-	local fill = Instance.new("Frame")
-	fill.BackgroundColor3 = PINK
-	fill.BorderSizePixel = 0
-	fill.Parent = bar
+	local Fill = Instance.new("Frame")
+	Fill.BackgroundColor3 = Colors.Pink
+	Fill.BorderSizePixel = 0
+	Fill.Parent = Bar
 
-	local fc = Instance.new("UICorner")
-	fc.CornerRadius = UDim.new(1,0)
-	fc.Parent = fill
+	local FillCorner = Instance.new("UICorner")
+	FillCorner.CornerRadius = UDim.new(1,0)
+	FillCorner.Parent = Fill
 
 	local dragging = false
 
 	local function SetValue(v)
 
-		v = math.clamp(math.floor(v+.5),min,max)
+		v = math.clamp(
+			math.floor(v+0.5),
+			min,
+			max
+		)
 
-		local pct = (v-min)/(max-min)
+		local percent =
+			(v-min)/(max-min)
 
-		fill.Size = UDim2.new(pct,0,1,0)
-		valueLabel.Text = tostring(v)
+		Fill.Size =
+			UDim2.new(
+				percent,
+				0,
+				1,
+				0
+			)
+
+		Value.Text = tostring(v)
 
 		callback(v)
-
 	end
 
 	local function MouseValue(x)
 
-		local pct = math.clamp(
-			(x-bar.AbsolutePosition.X) /
-			bar.AbsoluteSize.X,
+		local percent = math.clamp(
+			(x-Bar.AbsolutePosition.X) /
+			Bar.AbsoluteSize.X,
 			0,
 			1
 		)
 
-		SetValue(min+(max-min)*pct)
+		SetValue(
+			min+(max-min)*percent
+		)
 
 	end
 
-	bar.InputBegan:Connect(function(input)
+	Bar.InputBegan:Connect(function(input)
 
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType ==
+			Enum.UserInputType.MouseButton1 then
+
 			dragging = true
 			MouseValue(input.Position.X)
+
 		end
 
 	end)
 
-	UIS.InputChanged:Connect(function(input)
+	UserInputService.InputChanged:Connect(function(input)
 
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		if dragging and
+			input.UserInputType ==
+			Enum.UserInputType.MouseMovement then
+
 			MouseValue(input.Position.X)
+
 		end
 
 	end)
 
-	UIS.InputEnded:Connect(function(input)
+	UserInputService.InputEnded:Connect(function(input)
 
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType ==
+			Enum.UserInputType.MouseButton1 then
+
 			dragging = false
+
 		end
 
 	end)
@@ -371,185 +467,308 @@ local function Slider(text,min,max,default,callback)
 end
 
 --========================================================
--- PAINEL
+-- CONTROLES
 --========================================================
 
-Section("🎯 AIM ASSIST")
+Section("🎯","AIM ASSIST")
 
-Toggle("Aim Assist de Treino",false,function(v)
-	Settings.AimAssist = v
-	FOV.Visible = v
-end)
+Toggle(
+	"🎯",
+	"Aim Assist",
+	false,
+	function(v)
+		Config.Aim = v
+		FOV.Visible = v
+	end
+)
 
-Slider("Distância do Aim",1,200,200,function(v)
-	Settings.AimDistance = v
-end)
+Slider(
+	"Aim Distance",
+	1,
+	200,
+	200,
+	function(v)
+		Config.AimDistance = v
+	end
+)
 
-Slider("FOV",1,500,120,function(v)
+Slider(
+	"Aim FOV",
+	1,
+	500,
+	120,
+	function(v)
 
-	Settings.AimFOV = v
+		Config.AimFOV = v
 
-	FOV.Size = UDim2.fromOffset(v*2,v*2)
+		FOV.Size =
+			UDim2.fromOffset(
+				v*2,
+				v*2
+			)
 
-end)
+	end
+)
 
-Slider("Suavidade",1,100,18,function(v)
-	Settings.AimSmooth = v/100
-end)
+Slider(
+	"Aim Smooth",
+	1,
+	100,
+	18,
+	function(v)
 
-Section("👁 ESP")
+		Config.AimSmooth =
+			math.clamp(v/100,0.01,1)
 
-Toggle("ESP — Nome / Vida / Distância",false,function(v)
-	Settings.ESP = v
-end)
+	end
+)
 
-Slider("Distância ESP",1,3000,3000,function(v)
-	Settings.ESPDistance = v
-end)
+Section("👁","ESP")
 
-Section("🦴 SKELETON")
+Toggle(
+	"👁",
+	"ESP — Nome / Vida / Distância",
+	false,
+	function(v)
+		Config.ESP = v
+	end
+)
 
-Toggle("Skeleton R6 / R15",false,function(v)
-	Settings.Skeleton = v
-end)
+Slider(
+	"ESP Distance",
+	1,
+	3000,
+	3000,
+	function(v)
+		Config.ESPDistance = v
+	end
+)
 
-Slider("Distância Skeleton",1,3000,3000,function(v)
-	Settings.SkeletonDistance = v
-end)
+Section("🦴","SKELETON")
 
-Section("🔎 ALL CHECK")
+Toggle(
+	"🦴",
+	"Skeleton R6 / R15",
+	false,
+	function(v)
+		Config.Skeleton = v
+	end
+)
 
-Toggle("All Check — Visibilidade",false,function(v)
-	Settings.AllCheck = v
-end)
+Slider(
+	"Skeleton Distance",
+	1,
+	3000,
+	3000,
+	function(v)
+		Config.SkeletonDistance = v
+	end
+)
 
-Slider("Distância All Check",1,3000,3000,function(v)
-	Settings.AllCheckDistance = v
-end)
+Section("🔎","ALL CHECK")
 
-Section("🌀 MOVEMENT")
+Toggle(
+	"🔎",
+	"All Check — Visibilidade",
+	false,
+	function(v)
+		Config.AllCheck = v
+	end
+)
 
-Toggle("Noclip",false,function(v)
-	Settings.Noclip = v
-end)
+Slider(
+	"All Check Distance",
+	1,
+	3000,
+	3000,
+	function(v)
+		Config.AllCheckDistance = v
+	end
+)
+
+Section("🌀","MOVEMENT")
+
+Toggle(
+	"🌀",
+	"Noclip",
+	false,
+	function(v)
+		Config.Noclip = v
+	end
+)
 
 --========================================================
--- ESP
+-- ESP SYSTEM
 --========================================================
 
-local ESP = {}
+local ESPObjects = {}
 
 local function RemoveESP(player)
 
-	if ESP[player] then
-		ESP[player]:Destroy()
-		ESP[player] = nil
+	local object = ESPObjects[player]
+
+	if object then
+		object:Destroy()
+		ESPObjects[player] = nil
 	end
 
 end
 
+local function CreateESP(player)
+
+	local Billboard = Instance.new("BillboardGui")
+	Billboard.Name = "PlayerESP"
+	Billboard.Size = UDim2.fromOffset(220,90)
+	Billboard.AlwaysOnTop = true
+	Billboard.LightInfluence = 0
+	Billboard.Parent = Gui
+
+	local Name = Instance.new("TextLabel")
+	Name.Name = "PlayerName"
+	Name.Size = UDim2.new(1,0,0,23)
+	Name.BackgroundTransparency = 1
+	Name.TextColor3 = Colors.Pink
+	Name.TextStrokeTransparency = 0
+	Name.TextStrokeColor3 = Color3.new(0,0,0)
+	Name.Font = Enum.Font.GothamBold
+	Name.TextSize = 14
+	Name.Parent = Billboard
+
+	local Distance = Instance.new("TextLabel")
+	Distance.Name = "Distance"
+	Distance.Size = UDim2.new(1,0,0,18)
+	Distance.Position = UDim2.fromOffset(0,23)
+	Distance.BackgroundTransparency = 1
+	Distance.TextColor3 = Colors.White
+	Distance.TextStrokeTransparency = 0
+	Distance.Font = Enum.Font.Gotham
+	Distance.TextSize = 11
+	Distance.Parent = Billboard
+
+	local Back = Instance.new("Frame")
+	Back.Size = UDim2.new(.70,0,0,7)
+	Back.Position = UDim2.new(.15,0,0,47)
+	Back.BackgroundColor3 = Color3.fromRGB(45,20,55)
+	Back.BorderSizePixel = 0
+	Back.Parent = Billboard
+
+	local BackCorner = Instance.new("UICorner")
+	BackCorner.CornerRadius = UDim.new(1,0)
+	BackCorner.Parent = Back
+
+	local Health = Instance.new("Frame")
+	Health.Name = "Health"
+	Health.Size = UDim2.new(1,0,1,0)
+	Health.BackgroundColor3 = Colors.Green
+	Health.BorderSizePixel = 0
+	Health.Parent = Back
+
+	local HealthCorner = Instance.new("UICorner")
+	HealthCorner.CornerRadius = UDim.new(1,0)
+	HealthCorner.Parent = Health
+
+	local HealthText = Instance.new("TextLabel")
+	HealthText.Size = UDim2.new(1,0,0,18)
+	HealthText.Position = UDim2.fromOffset(0,56)
+	HealthText.BackgroundTransparency = 1
+	HealthText.TextColor3 = Colors.White
+	HealthText.TextStrokeTransparency = 0
+	HealthText.Font = Enum.Font.Gotham
+	HealthText.TextSize = 10
+	HealthText.Parent = Billboard
+
+	ESPObjects[player] = Billboard
+
+	return Billboard
+end
+
 local function UpdateESP(player)
 
-	if player == LocalPlayer then return end
+	if player == LocalPlayer then
+		return
+	end
 
-	local character = CharacterOf(player)
-	local head = HeadOf(player)
-	local humanoid = HumanoidOf(player)
+	if not Config.ESP then
 
-	if not Settings.ESP or not character or not head or not humanoid or humanoid.Health <= 0 then
-
-		if ESP[player] then
-			ESP[player].Enabled = false
+		if ESPObjects[player] then
+			ESPObjects[player].Enabled = false
 		end
 
 		return
 	end
 
-	local distance = DistanceFromMe(player)
-
-	if distance > Settings.ESPDistance then
-
-		if ESP[player] then
-			ESP[player].Enabled = false
-		end
-
-		return
-	end
-
-	local gui = ESP[player]
-
-	if not gui or gui.Parent ~= Gui then
-
+	if not IsAlive(player) then
 		RemoveESP(player)
-
-		gui = Instance.new("BillboardGui")
-		gui.Name = "ESP"
-		gui.Size = UDim2.fromOffset(220,80)
-		gui.AlwaysOnTop = true
-		gui.Parent = Gui
-
-		local name = Instance.new("TextLabel")
-		name.Name = "Name"
-		name.Size = UDim2.new(1,0,0,22)
-		name.BackgroundTransparency = 1
-		name.TextColor3 = PINK
-		name.TextStrokeTransparency = 0
-		name.TextStrokeColor3 = Color3.new(0,0,0)
-		name.Font = Enum.Font.GothamBold
-		name.TextSize = 13
-		name.Parent = gui
-
-		local dist = Instance.new("TextLabel")
-		dist.Name = "Distance"
-		dist.Size = UDim2.new(1,0,0,18)
-		dist.Position = UDim2.fromOffset(0,22)
-		dist.BackgroundTransparency = 1
-		dist.TextColor3 = WHITE
-		dist.TextStrokeTransparency = 0
-		dist.Font = Enum.Font.Gotham
-		dist.TextSize = 11
-		dist.Parent = gui
-
-		local back = Instance.new("Frame")
-		back.Name = "HealthBack"
-		back.Size = UDim2.new(.7,0,0,7)
-		back.Position = UDim2.new(.15,0,0,45)
-		back.BackgroundColor3 = Color3.fromRGB(50,20,55)
-		back.BorderSizePixel = 0
-		back.Parent = gui
-
-		local bar = Instance.new("Frame")
-		bar.Name = "Health"
-		bar.Size = UDim2.new(1,0,1,0)
-		bar.BackgroundColor3 = GREEN
-		bar.BorderSizePixel = 0
-		bar.Parent = back
-
-		ESP[player] = gui
-
+		return
 	end
 
-	gui.Adornee = head
-	gui.MaxDistance = Settings.ESPDistance+100
-	gui.Enabled = true
+	local head = Head(player)
 
-	gui.Name.Text = player.DisplayName
-	gui.Distance.Text = math.floor(distance).." studs"
+	if not head then
+		return
+	end
 
-	local health = math.clamp(
-		humanoid.Health/math.max(humanoid.MaxHealth,1),
-		0,
-		1
-	)
+	local distance = GetDistance(player)
 
-	gui.Health.Size = UDim2.new(health,0,1,0)
+	if distance > Config.ESPDistance then
 
-	if health <= .25 then
-		gui.Health.BackgroundColor3 = RED
-	elseif health <= .5 then
-		gui.Health.BackgroundColor3 = YELLOW
+		if ESPObjects[player] then
+			ESPObjects[player].Enabled = false
+		end
+
+		return
+	end
+
+	local Billboard = ESPObjects[player]
+
+	if not Billboard then
+		Billboard = CreateESP(player)
+	end
+
+	Billboard.Adornee = head
+	Billboard.Enabled = true
+
+	local humanoid = Humanoid(player)
+
+	Billboard.PlayerName.Text =
+		player.DisplayName ..
+		"  @" ..
+		player.Name
+
+	Billboard.Distance.Text =
+		math.floor(distance) ..
+		" studs"
+
+	local percent =
+		math.clamp(
+			humanoid.Health /
+			math.max(humanoid.MaxHealth,1),
+			0,
+			1
+		)
+
+	Billboard.Health.Size =
+		UDim2.new(
+			percent,
+			0,
+			1,
+			0
+		)
+
+	Billboard.HealthText.Text =
+		math.floor(humanoid.Health) ..
+		" / " ..
+		math.floor(humanoid.MaxHealth)
+
+	if percent <= .25 then
+		Billboard.Health.BackgroundColor3 =
+			Colors.Red
+	elseif percent <= .5 then
+		Billboard.Health.BackgroundColor3 =
+			Colors.Yellow
 	else
-		gui.Health.BackgroundColor3 = GREEN
+		Billboard.Health.BackgroundColor3 =
+			Colors.Green
 	end
 
 end
@@ -558,9 +777,9 @@ end
 -- SKELETON
 --========================================================
 
-local Skeleton = {}
+local Skeletons = {}
 
-local R6 = {
+local R6Bones = {
 	{"Head","Torso"},
 	{"Torso","Left Arm"},
 	{"Torso","Right Arm"},
@@ -568,7 +787,7 @@ local R6 = {
 	{"Torso","Right Leg"},
 }
 
-local R15 = {
+local R15Bones = {
 	{"Head","UpperTorso"},
 	{"UpperTorso","LowerTorso"},
 
@@ -589,86 +808,117 @@ local R15 = {
 	{"RightLowerLeg","RightFoot"},
 }
 
-local function MakeBone(folder,a,b)
+local function RemoveSkeleton(player)
 
-	if not a or not b then return end
+	local folder = Skeletons[player]
 
-	local att0 = Instance.new("Attachment")
-	att0.Parent = a
+	if folder then
 
-	local att1 = Instance.new("Attachment")
-	att1.Parent = b
+		for _,object in ipairs(folder:GetChildren()) do
 
-	local beam = Instance.new("Beam")
-	beam.Attachment0 = att0
-	beam.Attachment1 = att1
-	beam.Width0 = .045
-	beam.Width1 = .045
-	beam.Color = ColorSequence.new(PINK)
-	beam.LightEmission = 1
-	beam.FaceCamera = true
-	beam.Parent = folder
+			if object:IsA("Attachment") then
+				object:Destroy()
+			end
+
+		end
+
+		folder:Destroy()
+
+		Skeletons[player] = nil
+	end
 
 end
 
-local function RemoveSkeleton(player)
+local function MakeBone(folder,a,b)
 
-	if Skeleton[player] then
-		Skeleton[player]:Destroy()
-		Skeleton[player] = nil
+	if not a or not b then
+		return
 	end
+
+	local A = Instance.new("Attachment")
+	A.Name = "SkeletonAttachment"
+	A.Parent = a
+
+	local B = Instance.new("Attachment")
+	B.Name = "SkeletonAttachment"
+	B.Parent = b
+
+	local Beam = Instance.new("Beam")
+	Beam.Attachment0 = A
+	Beam.Attachment1 = B
+	Beam.Width0 = .045
+	Beam.Width1 = .045
+	Beam.FaceCamera = true
+	Beam.LightEmission = 1
+	Beam.Color = ColorSequence.new(
+		Colors.Pink
+	)
+	Beam.Parent = folder
 
 end
 
 local function UpdateSkeleton(player)
 
-	if player == LocalPlayer then return end
+	if player == LocalPlayer then
+		return
+	end
 
-	if not Settings.Skeleton then
+	if not Config.Skeleton then
 		RemoveSkeleton(player)
 		return
 	end
 
-	if not Alive(player) then
+	if not IsAlive(player) then
 		RemoveSkeleton(player)
 		return
 	end
 
-	if DistanceFromMe(player) > Settings.SkeletonDistance then
+	if GetDistance(player) >
+		Config.SkeletonDistance then
+
 		RemoveSkeleton(player)
 		return
 	end
 
-	local character = CharacterOf(player)
-	local humanoid = HumanoidOf(player)
+	-- Só recria quando necessário.
+	if Skeletons[player] then
+		return
+	end
 
-	if not character or not humanoid then return end
+	local character = Character(player)
+	local humanoid = Humanoid(player)
 
-	RemoveSkeleton(player)
+	if not character or not humanoid then
+		return
+	end
 
 	local folder = Instance.new("Folder")
-	folder.Name = "Skeleton"
-	folder.Parent = Gui
+	folder.Name = "Skeleton_"..player.Name
+	folder.Parent = character
 
 	local bones
 
-	if humanoid.RigType == Enum.HumanoidRigType.R15 then
-		bones = R15
+	if humanoid.RigType ==
+		Enum.HumanoidRigType.R15 then
+
+		bones = R15Bones
+
 	else
-		bones = R6
+
+		bones = R6Bones
+
 	end
 
 	for _,pair in ipairs(bones) do
 
-		MakeBone(
-			folder,
-			character:FindFirstChild(pair[1]),
-			character:FindFirstChild(pair[2])
-		)
+		local A = character:FindFirstChild(pair[1])
+		local B = character:FindFirstChild(pair[2])
+
+		MakeBone(folder,A,B)
 
 	end
 
-	Skeleton[player] = folder
+	Skeletons[player] = folder
 
 end
 
@@ -687,73 +937,105 @@ local function RemoveCheck(player)
 
 end
 
-local function Visible(player)
+local function IsVisible(player)
 
-	local head = HeadOf(player)
+	local head = Head(player)
 
-	if not head then return false end
+	if not head then
+		return false
+	end
 
-	local myCharacter = CharacterOf(LocalPlayer)
+	local character = Character(player)
+	local myCharacter = Character(LocalPlayer)
+
+	local camera = workspace.CurrentCamera
+
+	if not camera then
+		return false
+	end
 
 	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = {myCharacter}
 
-	local result = workspace:Raycast(
-		Camera.CFrame.Position,
-		head.Position-Camera.CFrame.Position,
-		params
-	)
+	params.FilterType =
+		Enum.RaycastFilterType.Exclude
+
+	params.FilterDescendantsInstances = {
+		myCharacter
+	}
+
+	local direction =
+		head.Position -
+		camera.CFrame.Position
+
+	local result =
+		workspace:Raycast(
+			camera.CFrame.Position,
+			direction,
+			params
+		)
 
 	if not result then
 		return true
 	end
 
-	return result.Instance:IsDescendantOf(CharacterOf(player))
+	return result.Instance:IsDescendantOf(character)
 
 end
 
 local function UpdateCheck(player)
 
-	if player == LocalPlayer then return end
+	if player == LocalPlayer then
+		return
+	end
 
-	if not Settings.AllCheck or not Alive(player) then
+	if not Config.AllCheck or
+		not IsAlive(player) then
+
 		RemoveCheck(player)
 		return
 	end
 
-	if DistanceFromMe(player) > Settings.AllCheckDistance then
+	if GetDistance(player) >
+		Config.AllCheckDistance then
+
 		RemoveCheck(player)
 		return
 	end
 
-	local character = CharacterOf(player)
+	local character = Character(player)
 
-	if not character then return end
+	if not character then
+		return
+	end
 
-	local h = Checks[player]
+	local highlight = Checks[player]
 
-	if not h then
+	if not highlight then
 
-		h = Instance.new("Highlight")
-		h.Name = "AllCheck"
-		h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		h.FillTransparency = .85
-		h.OutlineTransparency = 0
-		h.Parent = character
+		highlight = Instance.new("Highlight")
+		highlight.Name = "AllCheck"
+		highlight.DepthMode =
+			Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.FillTransparency = .82
+		highlight.OutlineTransparency = .05
+		highlight.Parent = character
 
-		Checks[player] = h
+		Checks[player] = highlight
 
 	end
 
-	h.Adornee = character
+	highlight.Adornee = character
 
-	if Visible(player) then
-		h.FillColor = GREEN
-		h.OutlineColor = GREEN
+	if IsVisible(player) then
+
+		highlight.FillColor = Colors.Green
+		highlight.OutlineColor = Colors.Green
+
 	else
-		h.FillColor = RED
-		h.OutlineColor = RED
+
+		highlight.FillColor = Colors.Red
+		highlight.OutlineColor = Colors.Red
+
 	end
 
 end
@@ -762,49 +1044,75 @@ end
 -- AIM ASSIST
 --========================================================
 
-local function GetTarget()
+local function FindTarget()
 
-	local best = nil
-	local bestDistance = math.huge
+	local camera = workspace.CurrentCamera
 
-	local center = Vector2.new(
-		Camera.ViewportSize.X/2,
-		Camera.ViewportSize.Y/2
-	)
+	if not camera then
+		return nil
+	end
 
-	for _,player in ipairs(Players:GetPlayers()) do
+	local center =
+		Vector2.new(
+			camera.ViewportSize.X/2,
+			camera.ViewportSize.Y/2
+		)
 
-		if player ~= LocalPlayer and Alive(player) then
+	local bestPlayer = nil
+	local bestScreenDistance = math.huge
 
-			local distance = DistanceFromMe(player)
+	for _,player in ipairs(
+		Players:GetPlayers()
+	) do
 
-			if distance <= Settings.AimDistance then
+		if player ~= LocalPlayer
+			and IsAlive(player) then
 
-				local head = HeadOf(player)
+			local distance =
+				GetDistance(player)
+
+			if distance <=
+				Config.AimDistance then
+
+				local head = Head(player)
 
 				if head then
 
 					local screen,visible =
-						Camera:WorldToViewportPoint(head.Position)
+						camera:WorldToViewportPoint(
+							head.Position
+						)
 
 					if visible and screen.Z > 0 then
 
-						local point = Vector2.new(
-							screen.X,
-							screen.Y
-						)
+						local point =
+							Vector2.new(
+								screen.X,
+								screen.Y
+							)
 
-						local delta =
+						local screenDistance =
 							(point-center).Magnitude
 
-						if delta <= Settings.AimFOV then
+						if screenDistance <=
+							Config.AimFOV then
 
-							if not Settings.AllCheck or Visible(player) then
+							local allowed = true
 
-								if delta < bestDistance then
-									bestDistance = delta
-									best = player
-								end
+							if Config.AllCheck then
+								allowed =
+									IsVisible(player)
+							end
+
+							if allowed and
+								screenDistance <
+								bestScreenDistance then
+
+								bestScreenDistance =
+									screenDistance
+
+								bestPlayer =
+									player
 
 							end
 
@@ -820,40 +1128,51 @@ local function GetTarget()
 
 	end
 
-	return best
+	return bestPlayer
 
 end
 
---========================================================
--- AIM LOOP
---========================================================
-
 RunService:BindToRenderStep(
-	"TrainingAimAssist",
+	"NeonAimAssist",
 	Enum.RenderPriority.Camera.Value+1,
 	function()
 
-		if not Settings.AimAssist then return end
+		if not Config.Aim then
+			return
+		end
 
-		local target = GetTarget()
+		local camera =
+			workspace.CurrentCamera
 
-		if not target then return end
+		if not camera then
+			return
+		end
 
-		local head = HeadOf(target)
+		local target =
+			FindTarget()
 
-		if not head then return end
+		if not target then
+			return
+		end
 
-		local cameraPosition = Camera.CFrame.Position
+		local head =
+			Head(target)
 
-		local targetCF = CFrame.lookAt(
-			cameraPosition,
-			head.Position
-		)
+		if not head then
+			return
+		end
 
-		Camera.CFrame = Camera.CFrame:Lerp(
-			targetCF,
-			Settings.AimSmooth
-		)
+		local targetCFrame =
+			CFrame.lookAt(
+				camera.CFrame.Position,
+				head.Position
+			)
+
+		camera.CFrame =
+			camera.CFrame:Lerp(
+				targetCFrame,
+				Config.AimSmooth
+			)
 
 	end
 )
@@ -864,13 +1183,20 @@ RunService:BindToRenderStep(
 
 RunService.Stepped:Connect(function()
 
-	if not Settings.Noclip then return end
+	if not Config.Noclip then
+		return
+	end
 
-	local character = CharacterOf(LocalPlayer)
+	local character =
+		Character(LocalPlayer)
 
-	if not character then return end
+	if not character then
+		return
+	end
 
-	for _,object in ipairs(character:GetDescendants()) do
+	for _,object in ipairs(
+		character:GetDescendants()
+	) do
 
 		if object:IsA("BasePart") then
 			object.CanCollide = false
@@ -881,56 +1207,73 @@ RunService.Stepped:Connect(function()
 end)
 
 --========================================================
--- ATUALIZAÇÃO
+-- UPDATE
 --========================================================
 
-local skeletonTimer = 0
+local SkeletonTimer = 0
 
 RunService.RenderStepped:Connect(function(dt)
 
-	for _,player in ipairs(Players:GetPlayers()) do
+	for _,player in ipairs(
+		Players:GetPlayers()
+	) do
 
 		if player ~= LocalPlayer then
 
 			UpdateESP(player)
 			UpdateCheck(player)
+			UpdateSkeleton(player)
 
 		end
 
 	end
 
-	skeletonTimer += dt
+	SkeletonTimer += dt
 
-	if skeletonTimer >= .12 then
+	-- Remove Skeleton quando sai do limite
+	if SkeletonTimer >= .15 then
 
-		skeletonTimer = 0
+		SkeletonTimer = 0
 
-		for _,player in ipairs(Players:GetPlayers()) do
+		for player,folder in pairs(Skeletons) do
 
-			if player ~= LocalPlayer then
-				UpdateSkeleton(player)
+			if not Config.Skeleton
+				or not IsAlive(player)
+				or GetDistance(player) >
+					Config.SkeletonDistance then
+
+				RemoveSkeleton(player)
+
 			end
 
 		end
 
 	end
 
-	local viewport = Camera.ViewportSize
+	local camera =
+		workspace.CurrentCamera
 
-	FOV.Position = UDim2.fromOffset(
-		viewport.X/2,
-		viewport.Y/2
-	)
+	if camera then
+
+		FOV.Position =
+			UDim2.fromOffset(
+				camera.ViewportSize.X/2,
+				camera.ViewportSize.Y/2
+			)
+
+	end
 
 end)
 
 --========================================================
--- RESPAWN / PLAYER
+-- PLAYER / RESPAWN
 --========================================================
 
 local function SetupPlayer(player)
 
-	if player == LocalPlayer then return end
+	if player == LocalPlayer then
+		return
+	end
 
 	player.CharacterRemoving:Connect(function()
 
@@ -950,11 +1293,17 @@ local function SetupPlayer(player)
 
 end
 
-for _,player in ipairs(Players:GetPlayers()) do
+for _,player in ipairs(
+	Players:GetPlayers()
+) do
+
 	SetupPlayer(player)
+
 end
 
-Players.PlayerAdded:Connect(SetupPlayer)
+Players.PlayerAdded:Connect(
+	SetupPlayer
+)
 
 Players.PlayerRemoving:Connect(function(player)
 
@@ -968,44 +1317,56 @@ end)
 -- ARRASTAR PAINEL
 --========================================================
 
-local dragging = false
-local dragStart
-local startPos
+local Dragging = false
+local DragStart
+local StartPosition
 
-Header.InputBegan:Connect(function(input)
+Top.InputBegan:Connect(function(input)
 
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1 then
 
-		dragging = true
-		dragStart = input.Position
-		startPos = Main.Position
+		Dragging = true
+		DragStart = input.Position
+		StartPosition = Main.Position
 
 	end
 
 end)
 
-Header.InputEnded:Connect(function(input)
+Top.InputEnded:Connect(function(input)
 
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = false
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1 then
+
+		Dragging = false
+
 	end
 
 end)
 
-UIS.InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
 
-	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+	if not Dragging then
+		return
+	end
 
-		local delta = input.Position-dragStart
+	if input.UserInputType ~=
+		Enum.UserInputType.MouseMovement then
+		return
+	end
 
-		Main.Position = UDim2.new(
-			startPos.X.Scale,
-			startPos.X.Offset+delta.X,
-			startPos.Y.Scale,
-			startPos.Y.Offset+delta.Y
+	local delta =
+		input.Position - DragStart
+
+	Main.Position =
+		UDim2.new(
+			StartPosition.X.Scale,
+			StartPosition.X.Offset + delta.X,
+
+			StartPosition.Y.Scale,
+			StartPosition.Y.Offset + delta.Y
 		)
-
-	end
 
 end)
 
@@ -1013,18 +1374,28 @@ end)
 -- RIGHT SHIFT
 --========================================================
 
-UIS.InputBegan:Connect(function(input,processed)
+UserInputService.InputBegan:Connect(
+	function(input,processed)
 
-	if processed then return end
+		if processed then
+			return
+		end
 
-	if input.KeyCode == Enum.KeyCode.RightShift then
-		Main.Visible = not Main.Visible
+		if input.KeyCode ==
+			Enum.KeyCode.RightShift then
+
+			Main.Visible =
+				not Main.Visible
+
+		end
+
 	end
+)
 
-end)
-
-print("NEON TRAINING SYSTEM carregado.")
-print("ESP R6/R15: OK")
-print("SKELETON R6/R15: OK")
-print("ALL CHECK: OK")
-print("AIM ASSIST: OK")
+print("====================================")
+print(" NEON PLAYER TRAINING")
+print(" ESP: READY")
+print(" SKELETON R6/R15: READY")
+print(" ALL CHECK: READY")
+print(" AIM ASSIST: READY")
+print("====================================")
